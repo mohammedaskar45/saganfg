@@ -1,0 +1,62 @@
+{
+  "OWNER/ADMIN": {
+    "manage_billing": true,
+    "manage_team": true,
+    "view_all_projects": true,
+    "edit_checklists": true,
+    "annotate_workpapers": true,
+    "dispatch_k1": true,
+    "execute_ai": true,
+    "access_developer_api": true
+  },
+  "MANAGER": {
+    "manage_billing": false,
+    "manage_team": true,
+    "view_all_projects": true,
+    "edit_checklists": true,
+    "annotate_workpapers": true,
+    "dispatch_k1": true,
+    "execute_ai": true,
+    "access_developer_api": false
+  },
+  "PREPARER": {
+    "manage_billing": false,
+    "manage_team": false,
+    "view_all_projects": false,
+    "edit_checklists": true,
+    "annotate_workpapers": true,
+    "dispatch_k1": false,
+    "execute_ai": true,
+    "access_developer_api": false
+  },
+  "REVIEWER": {
+    "manage_billing": false,
+    "manage_team": false,
+    "view_all_projects": true,
+    "edit_checklists": false,
+    "annotate_workpapers": true,
+    "dispatch_k1": true,
+    "execute_ai": true,
+    "access_developer_api": false
+  },
+  "ADMIN_STAFF": {
+    "manage_billing": false,
+    "manage_team": false,
+    "view_all_projects": true,
+    "edit_checklists": true,
+    "annotate_workpapers": false,
+    "dispatch_k1": false,
+    "execute_ai": false,
+    "access_developer_api": false
+  },
+  "AUDITOR": {
+    "manage_billing": false,
+    "manage_team": false,
+    "view_all_projects": true,
+    "edit_checklists": false,
+    "annotate_workpapers": false,
+    "dispatch_k1": false,
+    "execute_ai": false,
+    "access_developer_api": false
+  }
+}

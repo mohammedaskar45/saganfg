@@ -1,0 +1,609 @@
+// SaganFG Tax Workflow Platform - Prisma Schema
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────
+// MULTI-TENANCY
+// ─────────────────────────────────────────
+
+model Firm {
+  id           String   @id @default(cuid())
+  name         String
+  slug         String   @unique
+  logoUrl      String?
+  primaryColor String   @default("#4F46E5")
+  customDomain String?
+  senderName   String?
+  senderEmail  String?
+  plan         String   @default("starter")
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  users             FirmUser[]
+  clients           Client[]
+  projects          Project[]
+  emailTemplates    EmailTemplate[]
+  workflowTemplates WorkflowTemplate[]
+  apiKeys           ApiKey[]
+  webhooks          Webhook[]
+  auditLogs         AuditLog[]
+  intakeForms       IntakeForm[]
+  notifications     Notification[]
+}
+
+model FirmUser {
+  id       String  @id @default(cuid())
+  firmId   String
+  userId   String
+  role     String  @default("PREPARER")
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+
+  firm Firm @relation(fields: [firmId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([firmId, userId])
+  @@index([firmId])
+}
+
+// ─────────────────────────────────────────
+// USERS & AUTH
+// ─────────────────────────────────────────
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  name         String
+  passwordHash String?
+  avatarUrl    String?
+  mfaEnabled   Boolean   @default(false)
+  isSuperAdmin Boolean   @default(false)
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  firmUsers       FirmUser[]
+  accounts        Account[]
+  sessions        Session[]
+  aiConversations AiConversation[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ─────────────────────────────────────────
+// CLIENTS & PROJECTS
+// ─────────────────────────────────────────
+
+model Client {
+  id         String  @id @default(cuid())
+  firmId     String
+  type       String  @default("INDIVIDUAL")
+  firstName  String?
+  lastName   String?
+  entityName String?
+  email      String
+  phone      String?
+  address    String?
+  ssn        String?
+  ein        String?
+  notes      String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  firm     Firm      @relation(fields: [firmId], references: [id])
+  projects Project[]
+
+  @@index([firmId])
+  @@index([email])
+}
+
+model Project {
+  id               String    @id @default(cuid())
+  firmId           String
+  clientId         String
+  year             Int
+  returnType       String    @default("F1040")
+  stage            String    @default("INTAKE")
+  status           String    @default("ACTIVE")
+  assigneeId       String?
+  reviewerId       String?
+  dueDate          DateTime?
+  tags             String?
+  notes            String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  firm              Firm               @relation(fields: [firmId], references: [id])
+  client            Client             @relation(fields: [clientId], references: [id])
+  documents         Document[]
+  tasks             Task[]
+  checklistItems    ChecklistItem[]
+  engagementLetters EngagementLetter[]
+  formSubmissions   FormSubmission[]
+  magicLinks        MagicLink[]
+  invoices          Invoice[]
+  signatureRequests SignatureRequest[]
+  k1Distributions   K1Distribution[]
+  secureShares      SecureShare[]
+  workpaperPack     WorkpaperPack?
+  messages          Message[]
+  auditLogs         AuditLog[]
+  aiConversations   AiConversation[]
+
+  @@index([firmId])
+  @@index([clientId])
+  @@index([stage, status])
+}
+
+// ─────────────────────────────────────────
+// DOCUMENTS
+// ─────────────────────────────────────────
+
+model Document {
+  id              String  @id @default(cuid())
+  projectId       String
+  firmId          String
+  uploadedBy      String?
+  originalName    String
+  smartName       String?
+  formType        String?
+  issuer          String?
+  taxYear         Int?
+  s3Key           String
+  mimeType        String
+  sizeBytes       Int
+  pageCount       Int?
+  status          String  @default("READY")
+  isDuplicate     Boolean @default(false)
+  extractedData   String?
+  confidence      Float?
+  checklistItemId String?
+  thumbnailKey    String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  project     Project      @relation(fields: [projectId], references: [id])
+  annotations Annotation[]
+
+  @@index([projectId])
+  @@index([firmId])
+}
+
+model Annotation {
+  id         String @id @default(cuid())
+  documentId String
+  userId     String
+  type       String
+  pageNumber Int
+  x          Float
+  y          Float
+  width      Float?
+  height     Float?
+  content    String?
+  color      String?
+
+  createdAt DateTime @default(now())
+
+  document Document @relation(fields: [documentId], references: [id])
+
+  @@index([documentId])
+}
+
+// ─────────────────────────────────────────
+// INTAKE MODULE
+// ─────────────────────────────────────────
+
+model ChecklistItem {
+  id               String  @id @default(cuid())
+  projectId        String
+  firmId           String
+  formType         String?
+  description      String
+  status           String  @default("MISSING")
+  linkedDocumentId String?
+  isCustom         Boolean @default(false)
+  isAiGenerated    Boolean @default(false)
+  sortOrder        Int     @default(0)
+
+  createdAt DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id])
+
+  @@index([projectId])
+}
+
+model EngagementLetter {
+  id        String  @id @default(cuid())
+  projectId String
+  firmId    String
+  name      String
+  s3Key     String?
+  status    String  @default("DRAFT")
+  sentAt    DateTime?
+  signedAt  DateTime?
+
+  createdAt DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id])
+
+  @@index([projectId])
+}
+
+model IntakeForm {
+  id         String  @id @default(cuid())
+  firmId     String
+  name       String
+  schema     String
+  returnType String?
+  isTemplate Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  firm        Firm             @relation(fields: [firmId], references: [id])
+  submissions FormSubmission[]
+
+  @@index([firmId])
+}
+
+model FormSubmission {
+  id          String    @id @default(cuid())
+  formId      String
+  projectId   String
+  answers     String
+  submittedAt DateTime?
+
+  createdAt DateTime @default(now())
+
+  form    IntakeForm @relation(fields: [formId], references: [id])
+  project Project    @relation(fields: [projectId], references: [id])
+}
+
+model MagicLink {
+  id           String    @id @default(cuid())
+  projectId    String
+  firmId       String
+  clientEmail  String
+  token        String    @unique @default(cuid())
+  expiresAt    DateTime
+  usedAt       DateTime?
+  lastAccessAt DateTime?
+  revoked      Boolean   @default(false)
+
+  createdAt DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id])
+
+  @@index([token])
+  @@index([projectId])
+}
+
+model Task {
+  id               String    @id @default(cuid())
+  projectId        String
+  firmId           String
+  title            String
+  description      String?
+  status           String    @default("PENDING")
+  assigneeId       String?
+  dueDate          DateTime?
+  stage            String?
+  linkedDocumentId String?
+  completedAt      DateTime?
+
+  createdAt DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id])
+
+  @@index([projectId])
+}
+
+// ─────────────────────────────────────────
+// WORKPAPER
+// ─────────────────────────────────────────
+
+model WorkpaperPack {
+  id            String @id @default(cuid())
+  projectId     String @unique
+  firmId        String
+  s3Key         String?
+  status        String @default("PENDING")
+  documentOrder String?
+  reviewLevel   Int    @default(0)
+  reviewNotes   String?
+
+  submittedAt DateTime?
+  reviewedAt  DateTime?
+  approvedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id])
+}
+
+// ─────────────────────────────────────────
+// DELIVERY MODULE
+// ─────────────────────────────────────────
+
+model SignatureRequest {
+  id                  String    @id @default(cuid())
+  projectId           String
+  firmId              String
+  type                String    @default("ENGAGEMENT_LETTER")
+  status              String    @default("PENDING")
+  signerName          String
+  signerEmail         String
+  documentKey         String
+  signedDocumentKey   String?
+  sentAt              DateTime?
+  signedAt            DateTime?
+  expiresAt           DateTime?
+  reminderCount       Int       @default(0)
+
+  createdAt DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id])
+
+  @@index([projectId])
+}
+
+model Invoice {
+  id              String    @id @default(cuid())
+  projectId       String
+  firmId          String
+  clientId        String
+  invoiceNumber   String
+  amount          Int
+  currency        String    @default("USD")
+  status          String    @default("DRAFT")
+  lineItems       String
+  dueDate         DateTime?
+  paidAt          DateTime?
+  sentAt          DateTime?
+  notes           String?
+
+  createdAt DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id])
+
+  @@index([projectId])
+}
+
+model K1Distribution {
+  id             String    @id @default(cuid())
+  projectId      String
+  firmId         String
+  recipientName  String
+  recipientEmail String
+  entityName     String?
+  s3Key          String
+  status         String    @default("PENDING")
+  magicToken     String    @unique @default(cuid())
+  sentAt         DateTime?
+  openedAt       DateTime?
+  downloadedAt   DateTime?
+  reminderCount  Int       @default(0)
+
+  createdAt DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id])
+
+  @@index([projectId])
+}
+
+model SecureShare {
+  id          String    @id @default(cuid())
+  projectId   String
+  firmId      String
+  s3Key       String
+  fileName    String
+  token       String    @unique @default(cuid())
+  expiresAt   DateTime
+  accessedAt  DateTime?
+  accessCount Int       @default(0)
+
+  createdAt DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id])
+}
+
+// ─────────────────────────────────────────
+// MESSAGES
+// ─────────────────────────────────────────
+
+model Message {
+  id          String  @id @default(cuid())
+  projectId   String
+  firmId      String
+  authorId    String?
+  authorEmail String?
+  isInternal  Boolean @default(false)
+  subject     String?
+  body        String
+  direction   String  @default("OUTBOUND")
+  readAt      DateTime?
+
+  createdAt DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id])
+
+  @@index([projectId])
+}
+
+// ─────────────────────────────────────────
+// AI ASSISTANT
+// ─────────────────────────────────────────
+
+model AiConversation {
+  id        String  @id @default(cuid())
+  firmId    String
+  userId    String
+  projectId String?
+  title     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user     User        @relation(fields: [userId], references: [id])
+  project  Project?    @relation(fields: [projectId], references: [id])
+  messages AiMessage[]
+
+  @@index([firmId, userId])
+}
+
+model AiMessage {
+  id             String @id @default(cuid())
+  conversationId String
+  role           String
+  content        String
+  sources        String?
+  tokensUsed     Int?
+
+  createdAt DateTime @default(now())
+
+  conversation AiConversation @relation(fields: [conversationId], references: [id])
+}
+
+// ─────────────────────────────────────────
+// NOTIFICATIONS & SETTINGS
+// ─────────────────────────────────────────
+
+model Notification {
+  id           String  @id @default(cuid())
+  firmId       String
+  userId       String
+  type         String
+  title        String
+  body         String?
+  isRead       Boolean @default(false)
+  projectId    String?
+  resourceId   String?
+  resourceType String?
+
+  createdAt DateTime @default(now())
+
+  firm Firm @relation(fields: [firmId], references: [id])
+
+  @@index([firmId, userId, isRead])
+}
+
+model EmailTemplate {
+  id        String  @id @default(cuid())
+  firmId    String
+  name      String
+  type      String
+  subject   String
+  bodyHtml  String
+  bodyText  String?
+  variables String?
+  isDefault Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  firm Firm @relation(fields: [firmId], references: [id])
+}
+
+model WorkflowTemplate {
+  id         String  @id @default(cuid())
+  firmId     String
+  name       String
+  returnType String
+  stages     String
+  isDefault  Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  firm Firm @relation(fields: [firmId], references: [id])
+}
+
+model AuditLog {
+  id           String  @id @default(cuid())
+  firmId       String
+  userId       String?
+  userEmail    String?
+  projectId    String?
+  action       String
+  resource     String
+  resourceId   String?
+  ip           String?
+  userAgent    String?
+  metadata     String?
+
+  createdAt DateTime @default(now())
+
+  firm    Firm     @relation(fields: [firmId], references: [id])
+  project Project? @relation(fields: [projectId], references: [id])
+
+  @@index([firmId])
+  @@index([createdAt])
+}
+
+model ApiKey {
+  id         String    @id @default(cuid())
+  firmId     String
+  name       String
+  keyHash    String    @unique
+  lastUsedAt DateTime?
+  expiresAt  DateTime?
+  scopes     String?
+
+  createdAt DateTime @default(now())
+
+  firm Firm @relation(fields: [firmId], references: [id])
+}
+
+model Webhook {
+  id          String    @id @default(cuid())
+  firmId      String
+  url         String
+  events      String
+  secretHash  String
+  isActive    Boolean   @default(true)
+  lastFiredAt DateTime?
+
+  createdAt DateTime @default(now())
+
+  firm Firm @relation(fields: [firmId], references: [id])
+}

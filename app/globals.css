@@ -1,26 +1,170 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  --color-brand-primary: #0d1b4b;
+  --color-brand-accent: #4f46e5;
+  --color-brand-accent-hover: #4338ca;
+  --color-stage-intake: #0ea5e9;
+  --color-stage-workpaper: #7c3aed;
+  --color-stage-prep: #f97316;
+  --color-stage-delivery: #22c55e;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
+@layer base {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    /* Brand Colors */
+    --color-primary: #0d1b4b;
+    --color-accent: #4f46e5;
+    --color-accent-hover: #4338ca;
+
+    /* Stage Colors */
+    --stage-intake: #0ea5e9;
+    --stage-workpaper: #7c3aed;
+    --stage-prep: #f97316;
+    --stage-delivery: #22c55e;
+
+    /* Surfaces */
+    --surface-sidebar: #0d1b4b;
+    --surface-card: #ffffff;
+    --surface-muted: #f9fafb;
+    --surface-border: #e5e7eb;
+
+    /* Text */
+    --text-primary: #111827;
+    --text-secondary: #6b7280;
+    --text-on-dark: #f9fafb;
+  }
+
+  * {
+    box-sizing: border-box;
+    padding: 0;
+    margin: 0;
+  }
+
+  html,
+  body {
+    max-width: 100vw;
+    overflow-x: hidden;
+    font-family: "Inter", system-ui, sans-serif;
+    background-color: #f4f6fa; /* Slate background to make cards pop out beautifully */
+    color: #111827;
+  }
+
+  *:focus-visible {
+    outline: 2px solid #4f46e5;
+    outline-offset: 2px;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Custom Scrollbars */
+.sidebar-scroll::-webkit-scrollbar {
+  width: 4px;
 }
+.sidebar-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.sidebar-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+}
+
+.custom-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.custom-scroll::-webkit-scrollbar-track {
+  background: #f3f4f6;
+}
+.custom-scroll::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 3px;
+}
+.custom-scroll::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+/* Custom UI Utilities */
+.stage-bar {
+  display: flex;
+  height: 6px;
+  border-radius: 3px;
+  overflow: hidden;
+  gap: 2px;
+}
+
+.stage-bar-segment {
+  flex: 1;
+  border-radius: 3px;
+  transition: all 0.3s ease;
+}
+
+.card-hover {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(13, 27, 75, 0.05), 0 2px 6px rgba(13, 27, 75, 0.02);
+}
+
+.transition-smooth {
+  transition: all 0.15s ease;
+}
+
+.gradient-navy {
+  background: linear-gradient(135deg, #0d1b4b 0%, #1e3a7a 100%);
+}
+
+/* Badges */
+.badge-intake { background: #e0f2fe; color: #0369a1; }
+.badge-workpaper { background: #ede9fe; color: #6d28d9; }
+.badge-prep { background: #ffedd5; color: #c2410c; }
+.badge-delivery { background: #dcfce7; color: #15803d; }
+.badge-active { background: #dbeafe; color: #1d4ed8; }
+.badge-overdue { background: #fee2e2; color: #dc2626; }
+.badge-stalled { background: #fef9c3; color: #ca8a04; }
+.badge-complete { background: #f3f4f6; color: #374151; }
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-in {
+  animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Sidebar nav items */
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  border-radius: 10px;
+  color: rgba(255, 255, 255, 0.65);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.nav-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+}
+
+.nav-item.active {
+  background: #4f46e5;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.35);
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.status-dot.overdue { background: #ef4444; }
+.status-dot.stalled { background: #f59e0b; }
+.status-dot.active { background: #22c55e; }
