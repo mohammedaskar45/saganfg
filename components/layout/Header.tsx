@@ -80,6 +80,7 @@ export default function Header() {
         <div className="relative hidden md:block w-64">
           <input
             type="text"
+            suppressHydrationWarning
             placeholder="Search projects, clients..."
             className="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:bg-white transition-all"
           />
@@ -93,6 +94,7 @@ export default function Header() {
               setNotificationsOpen(!notificationsOpen);
               setDropdownOpen(false);
             }}
+            suppressHydrationWarning
             className="p-2 text-gray-500 hover:bg-gray-50 rounded-xl relative transition-all"
           >
             <Bell size={20} />
@@ -111,6 +113,7 @@ export default function Header() {
                 {unreadCount > 0 && (
                   <button
                     onClick={markAllRead}
+                    suppressHydrationWarning
                     className="text-xs text-indigo-600 hover:text-indigo-700 font-medium"
                   >
                     Mark all as read
@@ -150,6 +153,7 @@ export default function Header() {
               setDropdownOpen(!dropdownOpen);
               setNotificationsOpen(false);
             }}
+            suppressHydrationWarning
             className="flex items-center gap-2 p-1 hover:bg-gray-50 rounded-xl transition-all"
           >
             <div className="w-8 h-8 rounded-full bg-indigo-600 text-white font-bold text-sm flex items-center justify-center">
@@ -181,6 +185,7 @@ export default function Header() {
               </Link>
               <button
                 onClick={() => signOut({ callbackUrl: "/login" })}
+                suppressHydrationWarning
                 className="w-full flex items-center gap-2 px-4 py-2.5 text-xs text-red-600 hover:bg-red-50 transition-colors text-left"
               >
                 <LogOut size={14} />
