@@ -10,7 +10,7 @@
     "access_developer_api": true
   },
   "MANAGER": {
-    "manage_billing": false,
+    "manage_billing": true,
     "manage_team": true,
     "view_all_projects": true,
     "edit_checklists": true,
@@ -58,5 +58,15 @@
     "dispatch_k1": false,
     "execute_ai": false,
     "access_developer_api": false
+  },
+  "OWNER": {
+    "manage_billing": true,
+    "manage_team": true,
+    "view_all_projects": true,
+    "edit_checklists": true,
+    "annotate_workpapers": true,
+    "dispatch_k1": true,
+    "execute_ai": true,
+    "access_developer_api": true
   }
 }

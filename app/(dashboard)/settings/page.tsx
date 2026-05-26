@@ -13,6 +13,10 @@ import {
   Check,
   X,
   Loader2,
+  MoreVertical,
+  Trash2,
+  Eye,
+  Edit2
 } from "lucide-react";
 
 interface TeamMember {
@@ -54,6 +58,7 @@ export default function SettingsPage() {
   const [firmName, setFirmName] = useState("Sagan Financial Group");
   const [primaryColor, setPrimaryColor] = useState("#4F46E5");
   const [customDomain, setCustomDomain] = useState("portal.saganfg.com");
+  const [brandingSaving, setBrandingSaving] = useState(false);
 
   // Webhooks
   const [webhooks, setWebhooks] = useState<WebhookItem[]>([
@@ -81,7 +86,29 @@ export default function SettingsPage() {
   const [matrixSaving, setMatrixSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<"idle" | "success" | "error">("idle");
 
-  // Fetch Team & Matrix
+  // Ellipsis menu & Custom popup states
+  const [activeMenuEmail, setActiveMenuEmail] = useState<string | null>(null);
+  const [deletingUserEmail, setDeletingUserEmail] = useState<string | null>(null);
+  const [editingUserEmail, setEditingUserEmail] = useState<string | null>(null);
+  const [editingUserRole, setEditingUserRole] = useState<string>("PREPARER");
+  const [viewingUser, setViewingUser] = useState<TeamMember | null>(null);
+
+  // Toast notification state
+  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
+
+  const showToast = (message: string, type: "success" | "error") => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3500);
+  };
+
+  // Close menus when clicking outside
+  useEffect(() => {
+    const handleOutsideClick = () => setActiveMenuEmail(null);
+    window.addEventListener("click", handleOutsideClick);
+    return () => window.removeEventListener("click", handleOutsideClick);
+  }, []);
+
+  // Fetch Team & Matrix & Branding
   useEffect(() => {
     async function fetchData() {
       try {
@@ -95,6 +122,19 @@ export default function SettingsPage() {
         }
       } catch (err) {
         console.error("Fetch session error:", err);
+      }
+
+      try {
+        // Fetch dynamic firm branding details
+        const firmRes = await fetch("/api/v1/settings/firm");
+        if (firmRes.ok) {
+          const firmData = await firmRes.json();
+          setFirmName(firmData.name);
+          setPrimaryColor(firmData.primaryColor);
+          setCustomDomain(firmData.customDomain || "");
+        }
+      } catch (err) {
+        console.error("Fetch firm error:", err);
       }
 
       try {
@@ -137,6 +177,7 @@ export default function SettingsPage() {
       { url: newWebhookUrl, events: newWebhookEvent, status: "ACTIVE" },
     ]);
     setNewWebhookUrl("");
+    showToast("Webhook endpoint added successfully!", "success");
   };
 
   // Submit dynamic team invite
@@ -159,14 +200,42 @@ export default function SettingsPage() {
         setInviteName("");
         setInviteEmail("");
         setInviteRole("PREPARER");
+        showToast("Invitation sent successfully! Preview link logged.", "success");
       } else {
-        alert(await res.text());
+        showToast(await res.text(), "error");
       }
     } catch (err) {
       console.error(err);
-      alert("Error sending invitation.");
+      showToast("Error sending invitation.", "error");
     } finally {
       setInviteLoading(false);
+    }
+  };
+
+  // Save branding updates dynamically
+  const handleSaveBranding = async () => {
+    setBrandingSaving(true);
+    try {
+      const res = await fetch("/api/v1/settings/firm", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: firmName,
+          primaryColor: primaryColor,
+          customDomain: customDomain,
+        }),
+      });
+
+      if (res.ok) {
+        showToast("Branding settings saved successfully!", "success");
+      } else {
+        showToast(await res.text(), "error");
+      }
+    } catch (err) {
+      console.error("Save branding error:", err);
+      showToast("Failed to save branding settings.", "error");
+    } finally {
+      setBrandingSaving(false);
     }
   };
 
@@ -183,19 +252,19 @@ export default function SettingsPage() {
         setUsers(
           users.map((u) => (u.email === email ? { ...u, role: newRole } : u))
         );
+        showToast("Staff role updated successfully!", "success");
+        setEditingUserEmail(null);
       } else {
-        alert(await res.text());
+        showToast(await res.text(), "error");
       }
     } catch (err) {
       console.error("Update role error:", err);
-      alert("Error updating role.");
+      showToast("Error updating role.", "error");
     }
   };
 
   // Delete staff member
   const handleDeleteUser = async (email: string) => {
-    if (!confirm("Are you sure you want to remove this user from the firm?")) return;
-
     try {
       const res = await fetch("/api/v1/settings/team", {
         method: "DELETE",
@@ -205,18 +274,20 @@ export default function SettingsPage() {
 
       if (res.ok) {
         setUsers(users.filter((u) => u.email !== email));
+        showToast("Staff member removed successfully!", "success");
+        setDeletingUserEmail(null);
       } else {
-        alert(await res.text());
+        showToast(await res.text(), "error");
       }
     } catch (err) {
       console.error("Delete user error:", err);
-      alert("Error removing user.");
+      showToast("Error removing user.", "error");
     }
   };
 
   // Toggle permission matrix checkbox
   const handlePermissionToggle = async (role: string, permission: string) => {
-    if (role === "OWNER" || role === "OWNER/ADMIN") return; // Keep Owner permissions fully immutable for safety
+    if (role === "OWNER" || role === "OWNER/ADMIN") return;
 
     const updatedMatrix = {
       ...matrix,
@@ -239,12 +310,15 @@ export default function SettingsPage() {
 
       if (res.ok) {
         setSaveStatus("success");
+        showToast("Permissions grid updated successfully!", "success");
       } else {
         setSaveStatus("error");
+        showToast("Failed to save permissions.", "error");
       }
     } catch (err) {
       console.error("Save matrix error:", err);
       setSaveStatus("error");
+      showToast("Failed to save permissions.", "error");
     } finally {
       setMatrixSaving(false);
       setTimeout(() => setSaveStatus("idle"), 2500);
@@ -252,7 +326,22 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
+    <div className="max-w-5xl mx-auto space-y-6 relative">
+      
+      {/* Dynamic Common Top-Right Toast Notification System */}
+      {toast && (
+        <div className={`fixed top-6 right-6 z-50 flex items-center gap-3 px-4 py-3 rounded-xl border shadow-xl transition-all animate-bounce ${
+          toast.type === "success" 
+            ? "bg-emerald-50 border-emerald-100 text-emerald-800 shadow-emerald-100/30" 
+            : "bg-rose-50 border-rose-100 text-rose-800 shadow-rose-100/30"
+        }`}>
+          <span className="text-xs font-bold">{toast.message}</span>
+          <button onClick={() => setToast(null)} className="p-0.5 hover:bg-black/5 rounded-lg cursor-pointer">
+            <X size={12} />
+          </button>
+        </div>
+      )}
+
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
         <p className="text-sm text-gray-500 mt-1">
@@ -368,8 +457,12 @@ export default function SettingsPage() {
                 </div>
 
                 <div className="pt-4 flex justify-end">
-                  <button className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition-all shadow-sm shadow-indigo-100">
-                    <Save size={14} />
+                  <button
+                    onClick={handleSaveBranding}
+                    disabled={brandingSaving}
+                    className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition-all shadow-sm shadow-indigo-100 cursor-pointer"
+                  >
+                    {brandingSaving ? <Loader2 className="animate-spin" size={14} /> : <Save size={14} />}
                     Save Changes
                   </button>
                 </div>
@@ -387,7 +480,7 @@ export default function SettingsPage() {
                 </div>
                 <button
                   onClick={() => setShowInviteModal(true)}
-                  className="flex items-center gap-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl transition-all shadow-sm shadow-indigo-100"
+                  className="flex items-center gap-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl transition-all shadow-sm shadow-indigo-100 cursor-pointer"
                 >
                   <UserPlus size={14} />
                   Invite User
@@ -402,42 +495,77 @@ export default function SettingsPage() {
               ) : (
                 <div className="divide-y divide-gray-100">
                   {users.map((u, idx) => (
-                    <div key={idx} className="py-3.5 flex items-center justify-between first:pt-0 last:pb-0">
+                    <div key={idx} className="py-3.5 flex items-center justify-between first:pt-0 last:pb-0 relative">
                       <div>
                         <h4 className="text-xs font-bold text-gray-800">{u.name}</h4>
                         <p className="text-[10px] text-gray-400 font-medium mt-0.5">{u.email}</p>
                       </div>
 
                       <div className="flex items-center gap-3">
-                        {u.role === "OWNER" || u.role === "OWNER/ADMIN" ? (
-                          <span className="bg-indigo-50 border border-indigo-100 text-indigo-700 text-[9px] font-bold px-2.5 py-1 rounded-lg uppercase tracking-wider">
-                            {u.role}
-                          </span>
-                        ) : (
-                          <select
-                            value={u.role}
-                            onChange={(e) => handleUpdateRole(u.email, e.target.value)}
-                            className="bg-indigo-50 border border-indigo-100 text-indigo-700 text-[10px] font-bold px-2 py-1 rounded-lg uppercase tracking-wider focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer transition-all"
-                          >
-                            <option value="MANAGER">MANAGER</option>
-                            <option value="PREPARER">PREPARER</option>
-                            <option value="REVIEWER">REVIEWER</option>
-                            <option value="ADMIN_STAFF">ADMIN STAFF</option>
-                            <option value="AUDITOR">AUDITOR</option>
-                          </select>
-                        )}
+                        <span className="bg-indigo-50 border border-indigo-100 text-indigo-700 text-[9px] font-bold px-2.5 py-1 rounded-lg uppercase tracking-wider">
+                          {u.role.replace("OWNER/", "")}
+                        </span>
                         <span className="bg-green-100 text-green-700 text-[9px] font-bold px-2 py-1 rounded-md uppercase tracking-wider">
                           {u.status}
                         </span>
-                        {u.role !== "OWNER" && u.role !== "OWNER/ADMIN" && u.email !== currentUserEmail && (
+
+                        {/* Three Dots menu trigger */}
+                        <div className="relative" onClick={(e) => e.stopPropagation()}>
                           <button
-                            onClick={() => handleDeleteUser(u.email)}
-                            className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all cursor-pointer"
-                            title="Remove team member"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setActiveMenuEmail(activeMenuEmail === u.email ? null : u.email);
+                            }}
+                            className="p-1 hover:bg-gray-100 rounded-lg text-gray-400 hover:text-gray-600 transition-all cursor-pointer"
                           >
-                            <X size={14} />
+                            <MoreVertical size={16} />
                           </button>
-                        )}
+
+                          {/* Dropdown Box Menu */}
+                          {activeMenuEmail === u.email && (
+                            <div className="absolute right-0 mt-1 w-32 bg-white border border-gray-200 rounded-xl shadow-lg py-1.5 z-40 animate-fade-in font-bold text-[10px] uppercase tracking-wide">
+                              <button
+                                onClick={() => {
+                                  setViewingUser(u);
+                                  setActiveMenuEmail(null);
+                                }}
+                                className="w-full px-3 py-2 text-left text-gray-600 hover:bg-gray-50 flex items-center gap-1.5 transition-colors cursor-pointer"
+                              >
+                                <Eye size={12} className="text-gray-400" />
+                                <span>View</span>
+                              </button>
+
+                              {/* Show Edit only if not Owner/Admin */}
+                              {u.role !== "OWNER" && u.role !== "OWNER/ADMIN" && (
+                                <button
+                                  onClick={() => {
+                                    setEditingUserEmail(u.email);
+                                    setEditingUserRole(u.role);
+                                    setActiveMenuEmail(null);
+                                  }}
+                                  className="w-full px-3 py-2 text-left text-gray-600 hover:bg-gray-50 flex items-center gap-1.5 transition-colors cursor-pointer"
+                                >
+                                  <Edit2 size={12} className="text-gray-400" />
+                                  <span>Edit Role</span>
+                                </button>
+                              )}
+
+                              {/* Show Delete only if not Owner/Admin and not current user */}
+                              {u.role !== "OWNER" && u.role !== "OWNER/ADMIN" && u.email !== currentUserEmail && (
+                                <button
+                                  onClick={() => {
+                                    setDeletingUserEmail(u.email);
+                                    setActiveMenuEmail(null);
+                                  }}
+                                  className="w-full px-3 py-2 text-left text-red-600 hover:bg-red-50 flex items-center gap-1.5 transition-colors cursor-pointer"
+                                >
+                                  <Trash2 size={12} className="text-red-400" />
+                                  <span>Delete</span>
+                                </button>
+                              )}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -453,7 +581,7 @@ export default function SettingsPage() {
                         <UserPlus size={16} className="text-indigo-600" />
                         Invite Team Member
                       </h3>
-                      <button onClick={() => setShowInviteModal(false)} className="text-gray-400 hover:text-gray-600">
+                      <button onClick={() => setShowInviteModal(false)} className="text-gray-400 hover:text-gray-600 cursor-pointer">
                         <X size={16} />
                       </button>
                     </div>
@@ -501,7 +629,7 @@ export default function SettingsPage() {
                       <button
                         type="submit"
                         disabled={inviteLoading}
-                        className="w-full py-2.5 rounded-xl text-white font-bold text-xs bg-indigo-600 hover:bg-indigo-700 transition-all flex items-center justify-center gap-1 shadow-sm shadow-indigo-100 disabled:opacity-50"
+                        className="w-full py-2.5 rounded-xl text-white font-bold text-xs bg-indigo-600 hover:bg-indigo-700 transition-all flex items-center justify-center gap-1 shadow-sm shadow-indigo-100 disabled:opacity-50 cursor-pointer"
                       >
                         {inviteLoading ? <Loader2 className="animate-spin" size={14} /> : null}
                         Send Magic Invite
@@ -510,6 +638,144 @@ export default function SettingsPage() {
                   </div>
                 </div>
               )}
+
+              {/* Dynamic Modal 1: Detail View Popup Dialogue */}
+              {viewingUser && (
+                <div className="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
+                  <div className="bg-white border border-gray-200 rounded-2xl max-w-sm w-full p-6 shadow-xl space-y-4">
+                    <div className="flex justify-between items-center border-b pb-2">
+                      <h3 className="font-bold text-sm text-gray-900 flex items-center gap-1.5">
+                        <Users size={16} className="text-indigo-600" />
+                        Staff Member Details
+                      </h3>
+                      <button onClick={() => setViewingUser(null)} className="text-gray-400 hover:text-gray-600 cursor-pointer">
+                        <X size={16} />
+                      </button>
+                    </div>
+                    <div className="space-y-3 font-semibold text-xs text-gray-700">
+                      <div>
+                        <span className="text-[10px] text-gray-400 uppercase tracking-wide block">Full Name</span>
+                        <p className="text-gray-800 text-sm font-bold mt-0.5">{viewingUser.name}</p>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-gray-400 uppercase tracking-wide block">Email Address</span>
+                        <p className="text-gray-800 mt-0.5">{viewingUser.email}</p>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-gray-400 uppercase tracking-wide block">System Role</span>
+                        <span className="inline-block bg-indigo-50 border border-indigo-100 text-indigo-700 text-[10px] font-bold px-2 py-0.5 rounded-lg mt-1">
+                          {viewingUser.role}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-gray-400 uppercase tracking-wide block">Workspace Status</span>
+                        <span className="inline-block bg-green-100 text-green-700 text-[10px] font-bold px-2 py-0.5 rounded-lg mt-1">
+                          {viewingUser.status}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="pt-2 flex justify-end">
+                      <button
+                        onClick={() => setViewingUser(null)}
+                        className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs rounded-xl transition-all cursor-pointer"
+                      >
+                        Close Detail View
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Dynamic Modal 2: Edit Staff Role Panel */}
+              {editingUserEmail && (
+                <div className="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
+                  <div className="bg-white border border-gray-200 rounded-2xl max-w-sm w-full p-6 shadow-xl space-y-4">
+                    <div className="flex justify-between items-center border-b pb-2">
+                      <h3 className="font-bold text-sm text-gray-900 flex items-center gap-1.5">
+                        <Edit2 size={16} className="text-indigo-600" />
+                        Edit Staff Role
+                      </h3>
+                      <button onClick={() => setEditingUserEmail(null)} className="text-gray-400 hover:text-gray-600 cursor-pointer">
+                        <X size={16} />
+                      </button>
+                    </div>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">Staff Email</label>
+                        <input
+                          type="text"
+                          disabled
+                          value={editingUserEmail}
+                          className="w-full px-3.5 py-2 border border-gray-200 rounded-xl text-xs font-semibold text-gray-400 bg-gray-50 cursor-not-allowed"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">Configure New Role</label>
+                        <select
+                          value={editingUserRole}
+                          onChange={(e) => setEditingUserRole(e.target.value)}
+                          className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 font-bold text-gray-700 bg-gray-50 focus:bg-white cursor-pointer"
+                        >
+                          <option value="MANAGER">MANAGER</option>
+                          <option value="PREPARER">PREPARER</option>
+                          <option value="REVIEWER">REVIEWER</option>
+                          <option value="ADMIN_STAFF">ADMIN STAFF</option>
+                          <option value="AUDITOR">AUDITOR</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div className="pt-2 flex justify-end gap-2.5">
+                      <button
+                        onClick={() => setEditingUserEmail(null)}
+                        className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs rounded-xl transition-all cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={() => handleUpdateRole(editingUserEmail, editingUserRole)}
+                        className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl transition-all cursor-pointer"
+                      >
+                        Save New Role
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Dynamic Modal 3: Common Popup Delete Confirmation Dialogue (Popup Modal) */}
+              {deletingUserEmail && (
+                <div className="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
+                  <div className="bg-white border border-gray-200 rounded-2xl max-w-sm w-full p-6 shadow-xl space-y-4">
+                    <div className="flex justify-between items-center border-b pb-2">
+                      <h3 className="font-bold text-sm text-red-600 flex items-center gap-1.5">
+                        <Trash2 size={16} className="text-red-500" />
+                        Confirm Staff Removal
+                      </h3>
+                      <button onClick={() => setDeletingUserEmail(null)} className="text-gray-400 hover:text-gray-600 cursor-pointer">
+                        <X size={16} />
+                      </button>
+                    </div>
+                    <p className="text-xs font-semibold text-gray-500 leading-relaxed">
+                      Are you sure you want to permanently remove <strong className="text-gray-800">{deletingUserEmail}</strong> from the firm workspace? This action will immediately revoke their active credentials, task assignments, and dashboard access.
+                    </p>
+                    <div className="pt-2 flex justify-end gap-2.5">
+                      <button
+                        onClick={() => setDeletingUserEmail(null)}
+                        className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs rounded-xl transition-all cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={() => handleDeleteUser(deletingUserEmail)}
+                        className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-bold text-xs rounded-xl transition-all cursor-pointer"
+                      >
+                        Yes, Remove Member
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
             </div>
           )}
 
@@ -625,7 +891,7 @@ export default function SettingsPage() {
                 </div>
                 <button
                   type="submit"
-                  className="sm:col-span-3 py-2 px-4 rounded-xl text-white font-bold text-xs bg-indigo-600 hover:bg-indigo-700 transition-all flex items-center justify-center gap-1 shadow-sm shadow-indigo-100"
+                  className="sm:col-span-3 py-2 px-4 rounded-xl text-white font-bold text-xs bg-indigo-600 hover:bg-indigo-700 transition-all flex items-center justify-center gap-1 shadow-sm shadow-indigo-100 cursor-pointer"
                 >
                   <Plus size={12} />
                   Add Webhook Endpoint
