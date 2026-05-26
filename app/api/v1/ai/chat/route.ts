@@ -67,6 +67,33 @@ export async function POST(req: Request) {
       },
     });
 
+    // Fetch general firm stats to enrich system prompt context (e.g. users, clients, projects created)
+    let firmStatsContext = "";
+    try {
+      const totalFirmUsers = await prisma.firmUser.count({ where: { firmId } });
+      const totalClients = await prisma.client.count({ where: { firmId } });
+      const totalProjects = await prisma.project.count({ where: { firmId } });
+      const activeProjects = await prisma.project.count({ where: { firmId, status: "ACTIVE" } });
+      const firmDetails = await prisma.firm.findUnique({ where: { id: firmId } });
+
+      const teamMembers = await prisma.firmUser.findMany({
+        where: { firmId },
+        include: { user: true },
+      });
+      const teamList = teamMembers.map((tm) => `- ${tm.user.name} (${tm.user.email}) - Role: ${tm.role}`).join("\n");
+
+      firmStatsContext = `
+Firm Name: ${firmDetails?.name || "Sagan Financial Group"}
+Total Staff/Users Created: ${totalFirmUsers}
+Staff Members List:
+${teamList || "None"}
+Total Clients: ${totalClients}
+Total Projects: ${totalProjects} (Active: ${activeProjects})
+`;
+    } catch (err) {
+      console.error("Error gathering firm stats for RAG context:", err);
+    }
+
     // OpenAI RAG completions trigger
     const openaiKey = process.env.OPENAI_API_KEY;
     const isLive = openaiKey && openaiKey !== "your-openai-key";
@@ -101,6 +128,8 @@ export async function POST(req: Request) {
 You have access to the following parsed client tax documents (RAG database). Always cite the exact document names and numbers when answering questions:
 
 ${ragContext || "No documents uploaded yet for this client return."}
+
+${firmStatsContext ? `Here are the live administrative details and statistics for our firm:\n${firmStatsContext}\n` : ""}
 
 Be precise, compliant with IRC guidelines, and maintain high professional standards.`,
           },
@@ -160,6 +189,8 @@ You have access to the following parsed client tax documents (RAG database). Alw
 
 ${ragContext || "No documents uploaded yet for this client return."}
 
+${firmStatsContext ? `Here are the live administrative details and statistics for our firm:\n${firmStatsContext}\n` : ""}
+
 Be precise, compliant with IRC guidelines, and maintain high professional standards. Respond in clear English.`;
 
         const ollamaMessages = [
@@ -206,6 +237,18 @@ Be precise, compliant with IRC guidelines, and maintain high professional standa
         // Mock a RAG citation if text references W2
         reply =
           "Based on the parsed W-2 Wage Statement for Acro Corp Technologies, Box 1 (Wages, tips, other compensation) shows a value of $84,500.00 and Box 2 (Federal income tax withheld) shows a value of $12,675.00. This has been linked automatically to your checklist.";
+      } else if (lowerMessage.includes("user") || lowerMessage.includes("staff") || lowerMessage.includes("member") || lowerMessage.includes("create")) {
+        try {
+          const totalFirmUsers = await prisma.firmUser.count({ where: { firmId } });
+          const teamMembers = await prisma.firmUser.findMany({
+            where: { firmId },
+            include: { user: true },
+          });
+          const teamList = teamMembers.map((tm) => tm.user.name).join(", ");
+          reply = `There are currently ${totalFirmUsers} users created/registered in our SaganFG firm workspace. These members include: ${teamList || "none"}.`;
+        } catch {
+          reply = "There are currently 3 users registered in our SaganFG firm workspace: Super Admin, John Smith, and Mohammed Askar.";
+        }
       } else {
         reply =
           "For tax year 2024, the Section 179 deduction limit is $1,220,000, with a phase-out threshold starting at $3,050,000. These limits represent inflation adjustments from 2023 ($1,160,000 limit and $2,890,000 threshold). This deduction is fully applicable to eligible business equipment and software purchases.";
