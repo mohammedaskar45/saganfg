@@ -469,86 +469,136 @@ export default function DocumentsSearchClient({
       {/* Upload and Split Simulator Panel */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Upload Simulation Tool */}
-        <div className="lg:col-span-1 bg-gradient-to-br from-indigo-900 to-slate-900 text-white rounded-2xl p-6 shadow-md flex flex-col justify-between space-y-4">
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 text-indigo-300">
-              <Sparkles size={18} />
-              <span className="text-xs font-bold uppercase tracking-wider">AI Engine Simulator</span>
+        <div className="lg:col-span-1 bg-gradient-to-br from-[#0a071d] via-[#120a2e] to-[#040714] border border-indigo-500/30 shadow-[0_0_50px_rgba(99,102,241,0.25)] text-white rounded-2xl p-6 flex flex-col justify-between space-y-5 relative overflow-hidden backdrop-blur-xl transition-all duration-500 hover:shadow-[0_0_65px_rgba(139,92,246,0.35)] hover:border-indigo-400/40">
+          
+          {/* Cyber Scanning Lines & Particles Overlay */}
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_-20%,rgba(129,140,248,0.18),transparent_70%)] pointer-events-none" />
+          <div className="absolute inset-0 opacity-[0.03] bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:16px_16px] pointer-events-none" />
+          <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-indigo-400/40 to-transparent animate-[pulse_2.5s_infinite] pointer-events-none" />
+          
+          <div className="space-y-3 relative z-10">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 bg-indigo-500/10 border border-indigo-400/20 px-3 py-1 rounded-full text-indigo-300 shadow-[0_0_15px_rgba(99,102,241,0.1)]">
+                <Sparkles size={13} className="text-indigo-400 animate-pulse" />
+                <span className="text-[10px] font-extrabold uppercase tracking-wider">AI Engine Co-Pilot</span>
+              </div>
+              <div className="flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/30 px-2.5 py-1 rounded-full shadow-[0_0_12px_rgba(16,185,129,0.15)]">
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+                </span>
+                <span className="text-[8px] font-extrabold text-emerald-400 uppercase tracking-widest">Active</span>
+              </div>
             </div>
-            <h3 className="text-lg font-bold">Smart Intake bulk processing</h3>
-            <p className="text-xs text-indigo-200 leading-relaxed">
-              Select an active tax engagement, then run a simulation scenario to see our automatic conversion, straightener, renaming, split, and parsing AI in action.
-            </p>
+            
+            <div className="space-y-1">
+              <h3 className="text-xl font-black bg-gradient-to-r from-white via-indigo-100 to-indigo-300 bg-clip-text text-transparent tracking-tight">
+                Smart Intake Simulator
+              </h3>
+              <p className="text-[11px] text-slate-300/80 leading-relaxed font-medium">
+                Select an active tax engagement, then execute custom AI ingestion pipelines to experience automated straightening, de-duplication, and semantic parsing.
+              </p>
+            </div>
           </div>
 
-          <div className="space-y-3">
+          <div className="space-y-4 relative z-10">
             {/* Target Engagement dropdown */}
-            <div className="space-y-1 text-slate-200">
-              <label className="text-[11px] font-bold text-slate-300">Target Tax Project</label>
-              <select
-                value={uploadProjectId}
-                onChange={(e) => setUploadProjectId(e.target.value)}
-                className="w-full pl-3 pr-8 py-2 bg-slate-800 border border-slate-700 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 text-white font-medium"
-              >
-                <option value="">-- Choose Client Project --</option>
-                {allProjects.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.clientName} ({p.year} {getReturnTypeLabel(p.returnType)})
-                  </option>
-                ))}
-              </select>
+            <div className="space-y-1.5 text-slate-200">
+              <div className="flex items-center justify-between">
+                <label className="text-[10px] font-bold text-indigo-300/80 uppercase tracking-wider">Target Tax Project</label>
+                {uploadProjectId && (
+                  <span className="text-[9px] font-extrabold text-emerald-400 uppercase tracking-widest bg-emerald-500/10 border border-emerald-500/20 px-1.5 rounded">Selected</span>
+                )}
+              </div>
+              <div className="relative">
+                <select
+                  value={uploadProjectId}
+                  onChange={(e) => setUploadProjectId(e.target.value)}
+                  className="w-full pl-3 pr-10 py-3 bg-[#0d0925]/80 border border-indigo-500/20 hover:border-indigo-400/40 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/40 text-white font-bold cursor-pointer transition-all hover:bg-[#120a2e] shadow-[inset_0_1px_3px_rgba(0,0,0,0.5)]"
+                >
+                  <option value="" className="bg-[#0b071e] text-slate-400 font-medium">-- Choose Client Project --</option>
+                  {allProjects.map((p) => (
+                    <option key={p.id} value={p.id} className="bg-[#0b071e] text-white">
+                      {p.clientName} ({p.year} {getReturnTypeLabel(p.returnType)})
+                    </option>
+                  ))}
+                </select>
+                <div className="absolute right-3 top-3.5 pointer-events-none text-indigo-400">
+                  <Layers size={14} className="animate-[pulse_2s_infinite]" />
+                </div>
+              </div>
             </div>
 
             {/* Simulated Scenarios */}
-            <div className="space-y-2 pt-2">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Simulate Upload File</p>
+            <div className="space-y-2.5 pt-1">
+              <p className="text-[10px] font-bold text-indigo-300/80 uppercase tracking-wider">Simulate Upload File</p>
               
               <button
                 disabled={isSimulating}
                 onClick={() => runMockUploadSimulation(1)}
-                className="w-full flex items-center justify-between px-3 py-2 bg-slate-800/80 hover:bg-slate-800 text-left rounded-xl border border-slate-700/60 transition-all text-xs font-semibold group disabled:opacity-50"
+                className="w-full flex items-center justify-between p-3 bg-white/[0.02] hover:bg-white/[0.06] border border-white/5 hover:border-indigo-500/40 rounded-xl transition-all duration-300 text-xs font-bold group disabled:opacity-30 disabled:cursor-not-allowed hover:shadow-[0_0_20px_rgba(99,102,241,0.15)] cursor-pointer"
               >
-                <div className="truncate pr-2">
-                  <p className="text-white group-hover:text-indigo-300 transition-colors">W-2 Image (PNG format)</p>
-                  <p className="text-[10px] text-slate-400 font-normal">Conversion, smart rename & extraction</p>
+                <div className="flex items-center gap-3 min-w-0 pr-2">
+                  <div className="p-2 rounded-lg bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 shadow-[0_0_10px_rgba(99,102,241,0.2)] group-hover:bg-indigo-500/20 group-hover:border-indigo-400 transition-all duration-300">
+                    <FileText size={15} />
+                  </div>
+                  <div className="text-left min-w-0">
+                    <p className="text-white group-hover:text-indigo-300 transition-colors font-bold truncate">W-2 Image (PNG format)</p>
+                    <p className="text-[10px] text-slate-400 font-normal mt-0.5 truncate">Auto-renaming, extraction & routing</p>
+                  </div>
                 </div>
-                <ChevronRight size={14} className="text-slate-400" />
+                <ChevronRight size={14} className="text-slate-400 group-hover:text-indigo-400 group-hover:translate-x-0.5 transition-all flex-shrink-0" />
               </button>
 
               <button
                 disabled={isSimulating}
                 onClick={() => runMockUploadSimulation(2)}
-                className="w-full flex items-center justify-between px-3 py-2 bg-slate-800/80 hover:bg-slate-800 text-left rounded-xl border border-slate-700/60 transition-all text-xs font-semibold group disabled:opacity-50"
+                className="w-full flex items-center justify-between p-3 bg-white/[0.02] hover:bg-white/[0.06] border border-white/5 hover:border-indigo-500/40 rounded-xl transition-all duration-300 text-xs font-bold group disabled:opacity-30 disabled:cursor-not-allowed hover:shadow-[0_0_20px_rgba(99,102,241,0.15)] cursor-pointer"
               >
-                <div className="truncate pr-2">
-                  <p className="text-white group-hover:text-indigo-300 transition-colors">Tilted 1099-INT (HEIC photo)</p>
-                  <p className="text-[10px] text-slate-400 font-normal">Straightening, conversion & parse</p>
+                <div className="flex items-center gap-3 min-w-0 pr-2">
+                  <div className="p-2 rounded-lg bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 shadow-[0_0_10px_rgba(6,182,212,0.2)] group-hover:bg-cyan-500/20 group-hover:border-cyan-400 transition-all duration-300">
+                    <RotateCw size={15} className="group-hover:rotate-45 transition-transform duration-300" />
+                  </div>
+                  <div className="text-left min-w-0">
+                    <p className="text-white group-hover:text-cyan-300 transition-colors font-bold truncate">Tilted 1099-INT (HEIC)</p>
+                    <p className="text-[10px] text-slate-400 font-normal mt-0.5 truncate">Orientation correction & conversion</p>
+                  </div>
                 </div>
-                <ChevronRight size={14} className="text-slate-400" />
+                <ChevronRight size={14} className="text-slate-400 group-hover:text-cyan-400 group-hover:translate-x-0.5 transition-all flex-shrink-0" />
               </button>
 
               <button
                 disabled={isSimulating}
                 onClick={() => runMockUploadSimulation(3)}
-                className="w-full flex items-center justify-between px-3 py-2 bg-slate-800/80 hover:bg-slate-800 text-left rounded-xl border border-slate-700/60 transition-all text-xs font-semibold group disabled:opacity-50"
+                className="w-full flex items-center justify-between p-3 bg-white/[0.02] hover:bg-white/[0.06] border border-white/5 hover:border-violet-500/40 rounded-xl transition-all duration-300 text-xs font-bold group disabled:opacity-30 disabled:cursor-not-allowed hover:shadow-[0_0_20px_rgba(139,92,246,0.15)] cursor-pointer"
               >
-                <div className="truncate pr-2">
-                  <p className="text-white group-hover:text-indigo-300 transition-colors">Combined Intake (Multi-page PDF)</p>
-                  <p className="text-[10px] text-slate-400 font-normal">Boundaries auto-split & route</p>
+                <div className="flex items-center gap-3 min-w-0 pr-2">
+                  <div className="p-2 rounded-lg bg-violet-500/10 border border-violet-500/30 text-violet-400 shadow-[0_0_10px_rgba(139,92,246,0.2)] group-hover:bg-violet-500/20 group-hover:border-violet-400 transition-all duration-300">
+                    <Scissors size={15} className="group-hover:scale-110 transition-transform duration-300" />
+                  </div>
+                  <div className="text-left min-w-0">
+                    <p className="text-white group-hover:text-violet-300 transition-colors font-bold truncate">Combined Intake (Multi-page PDF)</p>
+                    <p className="text-[10px] text-slate-400 font-normal mt-0.5 truncate">Intelligent splitting into distinct forms</p>
+                  </div>
                 </div>
-                <Scissors size={14} className="text-indigo-400" />
+                <ChevronRight size={14} className="text-slate-400 group-hover:text-violet-400 group-hover:translate-x-0.5 transition-all flex-shrink-0" />
               </button>
 
               <button
                 disabled={isSimulating}
                 onClick={() => runMockUploadSimulation(4)}
-                className="w-full flex items-center justify-between px-3 py-2 bg-slate-800/80 hover:bg-slate-800 text-left rounded-xl border border-slate-700/60 transition-all text-xs font-semibold group disabled:opacity-50"
+                className="w-full flex items-center justify-between p-3 bg-white/[0.02] hover:bg-white/[0.06] border border-white/5 hover:border-amber-500/40 rounded-xl transition-all duration-300 text-xs font-bold group disabled:opacity-30 disabled:cursor-not-allowed hover:shadow-[0_0_20px_rgba(245,158,11,0.15)] cursor-pointer"
               >
-                <div className="truncate pr-2">
-                  <p className="text-white group-hover:text-indigo-300 transition-colors">Duplicate Chase W-2</p>
-                  <p className="text-[10px] text-slate-400 font-normal">Detect hash & raise warning banner</p>
+                <div className="flex items-center gap-3 min-w-0 pr-2">
+                  <div className="p-2 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-400 shadow-[0_0_10px_rgba(245,158,11,0.2)] group-hover:bg-amber-500/20 group-hover:border-amber-400 transition-all duration-300">
+                    <AlertTriangle size={15} className="group-hover:animate-bounce transition-transform duration-300" />
+                  </div>
+                  <div className="text-left min-w-0">
+                    <p className="text-white group-hover:text-amber-300 transition-colors font-bold truncate">Duplicate Chase W-2</p>
+                    <p className="text-[10px] text-slate-400 font-normal mt-0.5 truncate">Hash checking & alert banner warning</p>
+                  </div>
                 </div>
-                <AlertTriangle size={14} className="text-amber-400" />
+                <ChevronRight size={14} className="text-slate-400 group-hover:text-amber-400 group-hover:translate-x-0.5 transition-all flex-shrink-0" />
               </button>
             </div>
           </div>
@@ -557,21 +607,21 @@ export default function DocumentsSearchClient({
           <AnimatePresence>
             {isSimulating && (
               <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                className="bg-indigo-950 border border-indigo-700/50 rounded-xl p-3 space-y-2 mt-2 overflow-hidden"
+                initial={{ opacity: 0, height: 0, y: 10 }}
+                animate={{ opacity: 1, height: "auto", y: 0 }}
+                exit={{ opacity: 0, height: 0, y: 10 }}
+                className="bg-[#0b061d] border border-indigo-500/30 rounded-xl p-3.5 space-y-2.5 mt-2 overflow-hidden shadow-[0_0_25px_rgba(99,102,241,0.15)]"
               >
                 <div className="flex items-center justify-between text-[11px] font-bold">
-                  <span className="flex items-center gap-1.5 text-indigo-300">
-                    <RefreshCw className="animate-spin text-indigo-400" size={12} />
+                  <span className="flex items-center gap-2 text-indigo-300">
+                    <RefreshCw className="animate-spin text-indigo-400" size={13} />
                     {simulationStep}
                   </span>
-                  <span>{simulationProgress}%</span>
+                  <span className="text-indigo-400 font-black">{simulationProgress}%</span>
                 </div>
-                <div className="w-full bg-slate-800 rounded-full h-1 overflow-hidden">
+                <div className="w-full bg-slate-900 rounded-full h-1.5 overflow-hidden border border-white/5">
                   <div
-                    className="bg-indigo-400 h-1 rounded-full transition-all duration-300"
+                    className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 h-full rounded-full transition-all duration-300 shadow-[0_0_8px_rgba(139,92,246,0.6)]"
                     style={{ width: `${simulationProgress}%` }}
                   />
                 </div>
