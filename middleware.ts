@@ -1,3 +1,7 @@
+if (!process.env.AUTH_SECRET) {
+  process.env.AUTH_SECRET = process.env.NEXTAUTH_SECRET || "saganfg-super-secret-key-2024-change-in-production";
+}
+
 import { auth } from "@/lib/auth";
 import { NextResponse } from "next/server";
 
